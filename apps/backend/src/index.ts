@@ -1,7 +1,8 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { corsMiddleware, errorHandler, apiRateLimiter } from './middleware';
+import { authRoutes } from './routes';
 
 dotenv.config();
 
@@ -9,25 +10,24 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// Middleware
+app.use(corsMiddleware);
 app.use(express.json());
+app.use(apiRateLimiter);
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend is running' });
 });
 
-// Example route
-app.get('/api/test', async (req, res) => {
-  try {
-    res.json({ message: 'Backend API is working' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// Routes
+app.use('/api/auth', authRoutes);
+
+// Error handler (must be last)
+app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
+  console.log(`Backend server running on http://localhost:${PORT}`);
 });
 
 // Graceful shutdown

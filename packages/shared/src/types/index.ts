@@ -42,3 +42,27 @@ export interface Budget {
   updatedAt: Date;
 }
 
+export interface Session {
+  id: string;
+  userId: string;
+  refreshToken: string;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RecurringExpense {
+  id: string;
+  amount: number;
+  description: string;
+  type: 'income' | 'expense';
+  categoryId?: string;
+  userId: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  startDate: Date;
+  endDate?: Date;
+  nextDueDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
