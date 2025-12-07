@@ -1,8 +1,47 @@
+export interface AuthResponse {
+  success: boolean;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+    };
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+    };
+  };
+}
+
+export interface RefreshResponse {
+  success: boolean;
+  data: {
+    accessToken: string;
+  };
+}
+
+export interface ApiError {
+  success: false;
+  error: {
+    message: string;
+    details?: unknown;
+  };
+}
+
 export class ApiClient {
   private baseUrl: string;
+  private accessToken: string | null = null;
 
   constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl;
+  }
+
+  setAccessToken(token: string | null) {
+    this.accessToken = token;
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken;
   }
 
   private async request<T>(
@@ -10,16 +49,28 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
+      credentials: 'include',
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({
+        error: { message: response.statusText },
+      }));
+      throw new Error(
+        errorData.error?.message || `API Error: ${response.status} ${response.statusText}`
+      );
     }
 
     return response.json();
@@ -45,6 +96,30 @@ export class ApiClient {
 
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  // Auth methods
+  async register(email: string, password: string, name: string): Promise<AuthResponse> {
+    return this.post<AuthResponse>('/api/auth/register', {
+      email,
+      password,
+      name,
+    });
+  }
+
+  async login(email: string, password: string): Promise<AuthResponse> {
+    return this.post<AuthResponse>('/api/auth/login', {
+      email,
+      password,
+    });
+  }
+
+  async logout(refreshToken: string): Promise<{ success: boolean; message: string }> {
+    return this.post('/api/auth/logout', { refreshToken });
+  }
+
+  async refreshToken(refreshToken: string): Promise<RefreshResponse> {
+    return this.post<RefreshResponse>('/api/auth/refresh', { refreshToken });
   }
 }
 

@@ -1,20 +1,26 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { User, Transaction, Category, Budget } from '@expensetracker/shared';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { isAuthenticated } from '../src/lib/auth';
 
-export default function Home() {
+export default function Index() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authenticated = await isAuthenticated();
+      if (authenticated) {
+        router.replace('/home');
+      } else {
+        router.replace('/screens/LoginScreen');
+      }
+    };
+    checkAuth();
+  }, [router]);
+
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
-      <Text style={styles.title}>Expense Tracker</Text>
-      <View style={styles.card}>
-        <Text style={styles.text}>
-          Welcome to Expense Tracker! The shared package is working correctly.
-        </Text>
-        <Text style={styles.subtext}>
-          ✅ Shared types imported: User, Transaction, Category, Budget
-        </Text>
-      </View>
+      <ActivityIndicator size="large" color="#4F46E5" />
     </View>
   );
 }
