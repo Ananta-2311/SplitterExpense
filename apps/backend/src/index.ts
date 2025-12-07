@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { corsMiddleware, errorHandler, apiRateLimiter } from './middleware';
 import { authRoutes } from './routes';
+import transactionsRoutes from './routes/transactions';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/transactions', transactionsRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
