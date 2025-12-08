@@ -4,10 +4,100 @@ import { parse } from 'csv-parse/sync';
 import { PrismaClient } from '@prisma/client';
 import { transactionSchema } from '@expensetracker/shared';
 import { requireAuth, AuthRequest } from '../middleware/requireAuth';
+import { categorizeAndGetCategoryId } from '../services/categoryHelper';
 
 const router = Router();
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Create transaction endpoint with auto-categorization
+router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { amount, description, type, categoryId, date, autoCategorize = true } = req.body;
+
+    // Validate input
+    const validation = transactionSchema.safeParse({
+      amount,
+      description,
+      type,
+      categoryId: categoryId || 'temp', // Temporary for validation
+      date: date ? new Date(date) : new Date(),
+    });
+
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Validation failed',
+          details: validation.error.errors,
+        },
+      });
+    }
+
+    // Auto-categorize if enabled and no category provided
+    let finalCategoryId = categoryId;
+    if (!finalCategoryId && autoCategorize && description) {
+      const autoCategoryId = await categorizeAndGetCategoryId(
+        userId,
+        description,
+        true,
+        process.env.OPENAI_API_KEY
+      );
+      if (autoCategoryId) {
+        finalCategoryId = autoCategoryId;
+      }
+    }
+
+    // If still no category, use default
+    if (!finalCategoryId) {
+      const defaultCategory = await prisma.category.findFirst({
+        where: { userId, name: 'Uncategorized' },
+      });
+
+      if (defaultCategory) {
+        finalCategoryId = defaultCategory.id;
+      } else {
+        const newCategory = await prisma.category.create({
+          data: {
+            userId,
+            name: 'Uncategorized',
+            description: 'Default category',
+          },
+        });
+        finalCategoryId = newCategory.id;
+      }
+    }
+
+    // Create transaction
+    const transaction = await prisma.transaction.create({
+      data: {
+        amount,
+        description,
+        type,
+        categoryId: finalCategoryId,
+        userId,
+        date: date ? new Date(date) : new Date(),
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: transaction,
+    });
+  } catch (error) {
+    console.error('Create transaction error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to create transaction',
+      },
+    });
+  }
+});
 
 interface ParsedRow {
   date?: string;
@@ -156,6 +246,9 @@ router.post(
         columnMapping = detected;
       }
 
+      // Auto-categorize transactions if enabled
+      const autoCategorize = req.body.autoCategorize !== false; // Default to true
+      
       // Get or create default category if categoryId not provided
       let defaultCategoryId = categoryId;
       if (!defaultCategoryId) {
@@ -194,12 +287,26 @@ router.post(
           const description = descriptionValue.trim() || 'Imported transaction';
           const type = determineType(typeValue, amount);
 
+          // Auto-categorize if enabled
+          let transactionCategoryId = defaultCategoryId;
+          if (autoCategorize && description) {
+            const autoCategoryId = await categorizeAndGetCategoryId(
+              userId,
+              description,
+              true,
+              process.env.OPENAI_API_KEY
+            );
+            if (autoCategoryId) {
+              transactionCategoryId = autoCategoryId;
+            }
+          }
+
           // Validate using shared schema
           const validation = transactionSchema.safeParse({
             amount: Math.abs(amount), // Use absolute value
             description,
             type,
-            categoryId: defaultCategoryId,
+            categoryId: transactionCategoryId,
             date,
           });
 
@@ -215,7 +322,7 @@ router.post(
             amount: Math.abs(amount),
             description,
             type,
-            categoryId: defaultCategoryId,
+            categoryId: transactionCategoryId,
             userId,
             date,
           });

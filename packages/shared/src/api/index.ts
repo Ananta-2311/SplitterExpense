@@ -1,3 +1,5 @@
+import type { CategorizationResponse } from '../types/categories';
+
 export interface AuthResponse {
   success: boolean;
   data: {
@@ -120,6 +122,17 @@ export class ApiClient {
 
   async refreshToken(refreshToken: string): Promise<RefreshResponse> {
     return this.post<RefreshResponse>('/api/auth/refresh', { refreshToken });
+  }
+
+  // Categorization methods
+  async categorizeTransaction(
+    text: string,
+    useAI?: boolean
+  ): Promise<CategorizationResponse> {
+    return this.post<CategorizationResponse>('/api/categorize', {
+      text,
+      useAI,
+    });
   }
 }
 
