@@ -134,5 +134,51 @@ export class ApiClient {
       useAI,
     });
   }
+
+  // Transaction methods
+  async getTransactions(params?: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    type?: 'income' | 'expense';
+    categoryId?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    success: boolean;
+    data: {
+      transactions: Array<{
+        id: string;
+        amount: number;
+        description: string;
+        type: 'income' | 'expense';
+        date: string;
+        category: {
+          id: string;
+          name: string;
+          color?: string;
+        };
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    };
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    const query = queryParams.toString();
+    return this.get(`/api/transactions${query ? `?${query}` : ''}`);
+  }
 }
 

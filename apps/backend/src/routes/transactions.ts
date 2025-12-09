@@ -10,6 +10,105 @@ const router = Router();
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Get transactions endpoint with filtering, sorting, and pagination
+router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const {
+      page = '1',
+      limit = '20',
+      sortBy = 'date',
+      sortOrder = 'desc',
+      type,
+      categoryId,
+      search,
+      startDate,
+      endDate,
+    } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause
+    const where: any = {
+      userId,
+    };
+
+    if (type && (type === 'income' || type === 'expense')) {
+      where.type = type;
+    }
+
+    if (categoryId) {
+      where.categoryId = categoryId as string;
+    }
+
+    if (search) {
+      where.description = {
+        contains: search as string,
+        mode: 'insensitive',
+      };
+    }
+
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) {
+        where.date.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        where.date.lte = new Date(endDate as string);
+      }
+    }
+
+    // Build orderBy clause
+    const orderBy: any = {};
+    const validSortFields = ['date', 'amount', 'description', 'createdAt'];
+    const sortField = validSortFields.includes(sortBy as string) ? sortBy : 'date';
+    orderBy[sortField as string] = sortOrder === 'asc' ? 'asc' : 'desc';
+
+    // Get transactions and total count
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: limitNum,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        transactions,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to fetch transactions',
+      },
+    });
+  }
+});
+
 // Create transaction endpoint with auto-categorization
 router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
