@@ -5,6 +5,7 @@ import { corsMiddleware, errorHandler, apiRateLimiter } from './middleware';
 import { authRoutes } from './routes';
 import transactionsRoutes from './routes/transactions';
 import categorizeRoutes from './routes/categorize';
+import analyticsRoutes from './routes/analytics';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api', categorizeRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

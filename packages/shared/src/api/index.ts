@@ -180,5 +180,51 @@ export class ApiClient {
     const query = queryParams.toString();
     return this.get(`/api/transactions${query ? `?${query}` : ''}`);
   }
+
+  // Analytics methods
+  async getMonthlyAnalytics(months?: number): Promise<{
+    success: boolean;
+    data: Array<{
+      month: string;
+      income: number;
+      expense: number;
+      net: number;
+    }>;
+  }> {
+    const query = months ? `?months=${months}` : '';
+    return this.get(`/api/analytics/monthly${query}`);
+  }
+
+  async getCategoryAnalytics(months?: number): Promise<{
+    success: boolean;
+    data: Array<{
+      categoryId: string;
+      name: string;
+      amount: number;
+      color?: string;
+      count: number;
+      percentage: number;
+    }>;
+  }> {
+    const query = months ? `?months=${months}` : '';
+    return this.get(`/api/analytics/categories${query}`);
+  }
+
+  async getIncomeExpenseAnalytics(months?: number): Promise<{
+    success: boolean;
+    data: {
+      totalIncome: number;
+      totalExpense: number;
+      net: number;
+      monthlyBreakdown: Array<{
+        month: string;
+        income: number;
+        expense: number;
+      }>;
+    };
+  }> {
+    const query = months ? `?months=${months}` : '';
+    return this.get(`/api/analytics/income-expense${query}`);
+  }
 }
 
