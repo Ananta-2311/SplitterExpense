@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { getAccessToken, apiClient } from '../lib/auth';
 import { formatCurrency } from '@expensetracker/shared';
+import RecurringExpensesWidget from '../components/RecurringExpensesWidget';
 
 interface MonthlyData {
   month: string;
@@ -142,6 +143,11 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Recurring Expenses Widget */}
+        <div className="mb-6">
+          <RecurringExpensesWidget />
+        </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

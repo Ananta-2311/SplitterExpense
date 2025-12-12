@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { transactionSchema } from '@expensetracker/shared';
 import { requireAuth, AuthRequest } from '../middleware/requireAuth';
 import { categorizeAndGetCategoryId } from '../services/categoryHelper';
+import { detectRecurringExpenses } from '../services/recurringDetection';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -446,6 +447,12 @@ router.post(
       // Save transactions to database
       const created = await prisma.transaction.createMany({
         data: transactions,
+      });
+
+      // Trigger recurring expense detection after import
+      detectRecurringExpenses(userId).catch((error) => {
+        console.error('Recurring expense detection failed after CSV import:', error);
+        // Don't fail the import if detection fails
       });
 
       res.json({

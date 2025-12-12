@@ -226,5 +226,49 @@ export class ApiClient {
     const query = months ? `?months=${months}` : '';
     return this.get(`/api/analytics/income-expense${query}`);
   }
+
+  // Recurring expenses methods
+  async getRecurringExpenses(): Promise<{
+    success: boolean;
+    data: Array<{
+      id: string;
+      amount: number;
+      description: string;
+      type: string;
+      frequency: string;
+      startDate: string;
+      endDate?: string;
+      nextDueDate: string;
+      category?: {
+        id: string;
+        name: string;
+        color?: string;
+      };
+    }>;
+  }> {
+    return this.get('/api/transactions/recurring');
+  }
+
+  async detectRecurringExpenses(): Promise<{
+    success: boolean;
+    message: string;
+    data: Array<{
+      id: string;
+      amount: number;
+      description: string;
+      type: string;
+      frequency: string;
+      startDate: string;
+      endDate?: string;
+      nextDueDate: string;
+      category?: {
+        id: string;
+        name: string;
+        color?: string;
+      };
+    }>;
+  }> {
+    return this.post('/api/transactions/recurring/detect');
+  }
 }
 

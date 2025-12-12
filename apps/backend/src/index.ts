@@ -6,6 +6,8 @@ import { authRoutes } from './routes';
 import transactionsRoutes from './routes/transactions';
 import categorizeRoutes from './routes/categorize';
 import analyticsRoutes from './routes/analytics';
+import recurringRoutes from './routes/recurring';
+import { startScheduler } from './services/scheduler';
 
 dotenv.config();
 
@@ -26,6 +28,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionsRoutes);
+app.use('/api/transactions/recurring', recurringRoutes);
 app.use('/api', categorizeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
@@ -34,6 +37,9 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
+  
+  // Start recurring expense detection scheduler
+  startScheduler();
 });
 
 // Graceful shutdown
