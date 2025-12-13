@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { apiClient, setTokens } from '../../src/lib/auth';
+import { performSync } from '../../src/lib/sync';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,6 +32,15 @@ export default function LoginScreen() {
         response.data.tokens.accessToken,
         response.data.tokens.refreshToken
       );
+      
+      // Perform initial sync after login
+      try {
+        await performSync();
+      } catch (syncError) {
+        console.error('Initial sync error:', syncError);
+        // Don't block login if sync fails
+      }
+      
       router.replace('/home');
     } catch (error) {
       Alert.alert(

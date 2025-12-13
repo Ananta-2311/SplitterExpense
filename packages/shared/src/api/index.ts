@@ -270,5 +270,52 @@ export class ApiClient {
   }> {
     return this.post('/api/transactions/recurring/detect');
   }
+
+  // Sync methods
+  async syncPull(lastSync?: string): Promise<{
+    success: boolean;
+    data: {
+      transactions: Array<{
+        id: string;
+        amount: number;
+        description: string;
+        type: 'income' | 'expense';
+        categoryId: string;
+        userId: string;
+        date: string;
+        createdAt: string;
+        updatedAt: string;
+        category: {
+          id: string;
+          name: string;
+          color?: string;
+        };
+      }>;
+      serverTime: string;
+    };
+  }> {
+    return this.post('/api/sync/pull', { lastSync });
+  }
+
+  async syncPush(transactions: Array<{
+    id: string;
+    amount: number;
+    description: string;
+    type: 'income' | 'expense';
+    categoryId: string;
+    date: string;
+    updatedAt: string;
+  }>): Promise<{
+    success: boolean;
+    data: {
+      created: number;
+      updated: number;
+      conflicts: number;
+      errors: Array<{ id: string; error: string }>;
+      serverTime: string;
+    };
+  }> {
+    return this.post('/api/sync/push', { transactions });
+  }
 }
 

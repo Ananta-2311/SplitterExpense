@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { apiClient, setTokens } from '../../lib/auth';
+import { performSync } from '../../lib/sync';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,15 @@ export default function LoginPage() {
     try {
       const response = await apiClient.login(email, password);
       setTokens(response.data.tokens.accessToken, response.data.tokens.refreshToken);
+      
+      // Perform initial sync after login
+      try {
+        await performSync();
+      } catch (syncError) {
+        console.error('Initial sync error:', syncError);
+        // Don't block login if sync fails
+      }
+      
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
