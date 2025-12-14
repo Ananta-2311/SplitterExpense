@@ -317,5 +317,38 @@ export class ApiClient {
   }> {
     return this.post('/api/sync/push', { transactions });
   }
+
+  // Export methods
+  async exportPdf(data: {
+    month: string;
+    year: string;
+    chartImages: Array<{ type: string; image: string }>;
+    summaries?: {
+      totalIncome: number;
+      totalExpense: number;
+      net: number;
+    };
+  }): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/export/pdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.accessToken ? { Authorization: `Bearer ${this.accessToken}` } : {}),
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: { message: response.statusText },
+      }));
+      throw new Error(
+        errorData.error?.message || `API Error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return response.blob();
+  }
 }
 

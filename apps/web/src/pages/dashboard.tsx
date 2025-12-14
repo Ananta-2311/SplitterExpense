@@ -18,6 +18,7 @@ import {
 import { getAccessToken, apiClient } from '../lib/auth';
 import { formatCurrency } from '@expensetracker/shared';
 import RecurringExpensesWidget from '../components/RecurringExpensesWidget';
+import { chartsToImage } from '../lib/chartToImage';
 
 interface MonthlyData {
   month: string;
@@ -65,6 +66,9 @@ export default function Dashboard() {
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
   const [incomeExpenseData, setIncomeExpenseData] = useState<IncomeExpenseData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     const token = getAccessToken();
@@ -99,6 +103,46 @@ export default function Dashboard() {
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      // Convert charts to images (only if they exist)
+      const chartIds: Array<{ id: string; type: string }> = [
+        { id: 'monthly-chart', type: 'monthly' },
+        { id: 'category-chart', type: 'category' },
+      ];
+
+      // Only add income-expense chart if data exists
+      if (incomeExpenseData && incomeExpenseData.monthlyBreakdown.length > 0) {
+        chartIds.push({ id: 'income-expense-chart', type: 'incomeExpense' });
+      }
+
+      const chartImages = await chartsToImage(chartIds);
+
+      // Get PDF blob (backend will calculate summaries for the selected month)
+      const blob = await apiClient.exportPdf({
+        month: String(selectedMonth),
+        year: String(selectedYear),
+        chartImages,
+      });
+
+      // Download PDF
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expense-report-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
@@ -114,7 +158,54 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Dashboard</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <label htmlFor="month-select" className="text-sm font-medium text-gray-700">
+                Month:
+              </label>
+              <select
+                id="month-select"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>
+                    {new Date(2000, m - 1).toLocaleDateString('en-US', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="year-select" className="text-sm font-medium text-gray-700">
+                Year:
+              </label>
+              <select
+                id="year-select"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(
+                  (y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+            <button
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            >
+              {exporting ? 'Exporting...' : 'Export PDF'}
+            </button>
+          </div>
+        </div>
 
         {/* Summary Cards */}
         {incomeExpenseData && (
@@ -152,7 +243,7 @@ export default function Dashboard() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Monthly Line Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6" id="monthly-chart">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Monthly Overview</h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthlyData}>
@@ -195,7 +286,7 @@ export default function Dashboard() {
           </div>
 
           {/* Category Pie Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6" id="category-chart">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Expenses by Category</h2>
             {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -230,7 +321,7 @@ export default function Dashboard() {
 
         {/* Income vs Expense Bar Chart */}
         {incomeExpenseData && incomeExpenseData.monthlyBreakdown.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6" id="income-expense-chart">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Income vs Expense by Month
             </h2>
