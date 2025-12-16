@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { isAuthenticated, clearTokens } from '../src/lib/auth';
+import { useTheme } from '../src/lib/useTheme';
+import { createThemedStyles } from '../src/lib/createThemedStyles';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -24,7 +28,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Text style={styles.title}>Home</Text>
       <View style={styles.card}>
         <Text style={styles.text}>Welcome to Expense Tracker!</Text>
@@ -36,10 +40,10 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = createThemedStyles((colors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -47,11 +51,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 32,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     padding: 24,
     shadowColor: '#000',
@@ -64,14 +68,16 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: '100%',
     maxWidth: 400,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   text: {
     fontSize: 16,
-    color: '#4b5563',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   logoutButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.error,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -82,5 +88,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-});
+}));
 

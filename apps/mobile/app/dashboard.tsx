@@ -20,8 +20,10 @@ import {
   VictoryLegend,
   VictoryContainer,
 } from 'victory-native';
-import { isAuthenticated, getAccessToken, apiClient } from '../src/lib/auth';
-import { formatCurrency } from '@expensetracker/shared';
+import { isAuthenticated, getAccessToken } from '../src/lib/auth';
+import { apiClient, formatCurrency } from '@expensetracker/shared';
+import { useTheme } from '../src/lib/useTheme';
+import { createThemedStyles } from '../src/lib/createThemedStyles';
 
 const { width } = Dimensions.get('window');
 const CHART_WIDTH = width - 32;
@@ -68,6 +70,8 @@ const COLORS = [
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
   const [incomeExpenseData, setIncomeExpenseData] = useState<IncomeExpenseData | null>(null);
@@ -119,9 +123,9 @@ export default function DashboardScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <StatusBar style="auto" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -149,7 +153,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Dashboard</Text>
@@ -312,10 +316,10 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = createThemedStyles((colors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -326,15 +330,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#111827',
+    color: colors.text,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -354,10 +358,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   summaryValue: {
@@ -365,13 +371,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   incomeValue: {
-    color: '#10B981',
+    color: colors.success,
   },
   expenseValue: {
-    color: '#EF4444',
+    color: colors.error,
   },
   chartCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     margin: 16,
@@ -384,11 +390,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   chartTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 16,
   },
   pieContainer: {
@@ -401,8 +409,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
-});
+}));
 
 

@@ -1,11 +1,13 @@
 import { Stack } from 'expo-router';
 import { SyncProvider } from '../src/lib/useSync';
+import { ThemeProvider } from '../src/lib/useTheme';
 import { SyncHeader } from '../src/components/SyncHeader';
 
 export default function RootLayout() {
   return (
-    <SyncProvider>
-      <Stack>
+    <ThemeProvider>
+      <SyncProvider>
+        <Stack>
         <Stack.Screen 
           name="index" 
           options={{ 
@@ -50,7 +52,8 @@ export default function RootLayout() {
           options={{ title: 'Sign Up', headerShown: false }} 
         />
       </Stack>
-    </SyncProvider>
+      </SyncProvider>
+    </ThemeProvider>
   );
 }
 

@@ -145,10 +145,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
           </div>
         </div>
       </div>
@@ -156,10 +156,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <label htmlFor="month-select" className="text-sm font-medium text-gray-700">
@@ -169,7 +169,7 @@ export default function Dashboard() {
                 id="month-select"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-1 text-sm"
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                   <option key={m} value={m}>
@@ -186,7 +186,7 @@ export default function Dashboard() {
                 id="year-select"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-1 text-sm"
               >
                 {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(
                   (y) => (
@@ -200,7 +200,7 @@ export default function Dashboard() {
             <button
               onClick={handleExportPdf}
               disabled={exporting}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {exporting ? 'Exporting...' : 'Export PDF'}
             </button>
@@ -210,23 +210,23 @@ export default function Dashboard() {
         {/* Summary Cards */}
         {incomeExpenseData && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm font-medium text-gray-500 mb-2">Total Income</p>
-              <p className="text-3xl font-bold text-green-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Income</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(incomeExpenseData.totalIncome)}
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm font-medium text-gray-500 mb-2">Total Expense</p>
-              <p className="text-3xl font-bold text-red-600">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Expense</p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400">
                 {formatCurrency(incomeExpenseData.totalExpense)}
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm font-medium text-gray-500 mb-2">Net</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Net</p>
               <p
                 className={`text-3xl font-bold ${
-                  incomeExpenseData.net >= 0 ? 'text-green-600' : 'text-red-600'
+                  incomeExpenseData.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}
               >
                 {formatCurrency(incomeExpenseData.net)}
@@ -243,8 +243,8 @@ export default function Dashboard() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Monthly Line Chart */}
-          <div className="bg-white rounded-lg shadow p-6" id="monthly-chart">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Monthly Overview</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" id="monthly-chart">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Monthly Overview</h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -286,8 +286,8 @@ export default function Dashboard() {
           </div>
 
           {/* Category Pie Chart */}
-          <div className="bg-white rounded-lg shadow p-6" id="category-chart">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Expenses by Category</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" id="category-chart">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Expenses by Category</h2>
             {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -321,8 +321,8 @@ export default function Dashboard() {
 
         {/* Income vs Expense Bar Chart */}
         {incomeExpenseData && incomeExpenseData.monthlyBreakdown.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6" id="income-expense-chart">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" id="income-expense-chart">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Income vs Expense by Month
             </h2>
             <ResponsiveContainer width="100%" height={400}>
