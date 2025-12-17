@@ -350,5 +350,144 @@ export class ApiClient {
 
     return response.blob();
   }
+
+  // Settings methods
+  async getProfile(): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      email: string;
+      name: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }> {
+    return this.get('/api/settings/profile');
+  }
+
+  async updateProfile(data: { name?: string; email?: string }): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      email: string;
+      name: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }> {
+    return this.put('/api/settings/profile', data);
+  }
+
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.post('/api/settings/password', data);
+  }
+
+  async getCategories(): Promise<{
+    success: boolean;
+    data: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      color?: string;
+      icon?: string;
+      userId: string;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  }> {
+    return this.get('/api/settings/categories');
+  }
+
+  async createCategory(data: {
+    name: string;
+    description?: string;
+    color?: string;
+    icon?: string;
+  }): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      name: string;
+      description?: string;
+      color?: string;
+      icon?: string;
+      userId: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }> {
+    return this.post('/api/settings/categories', data);
+  }
+
+  async updateCategory(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      color?: string;
+      icon?: string;
+    }
+  ): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      name: string;
+      description?: string;
+      color?: string;
+      icon?: string;
+      userId: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }> {
+    return this.put(`/api/settings/categories/${id}`, data);
+  }
+
+  async deleteCategory(id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.delete(`/api/settings/categories/${id}`);
+  }
+
+  async getPreferences(): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      userId: string;
+      aiCategorization: boolean;
+      emailNotifications: boolean;
+      pushNotifications: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }> {
+    return this.get('/api/settings/preferences');
+  }
+
+  async updatePreferences(data: {
+    aiCategorization?: boolean;
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+  }): Promise<{
+    success: boolean;
+    data: {
+      id: string;
+      userId: string;
+      aiCategorization: boolean;
+      emailNotifications: boolean;
+      pushNotifications: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }> {
+    return this.put('/api/settings/preferences', data);
+  }
 }
 

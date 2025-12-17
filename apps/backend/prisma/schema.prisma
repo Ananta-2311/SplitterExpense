@@ -23,6 +23,7 @@ model User {
   transactions      Transaction[]
   budgets           Budget[]
   recurringExpenses RecurringExpense[]
+  preferences       UserPreferences?
 
   @@map("users")
 }
@@ -111,5 +112,19 @@ model RecurringExpense {
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@map("recurring_expenses")
+}
+
+model UserPreferences {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  aiCategorization  Boolean  @default(true)
+  emailNotifications Boolean @default(true)
+  pushNotifications Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }
 

@@ -48,6 +48,12 @@ export default function Navbar() {
               >
                 Recurring
               </Link>
+              <Link
+                href="/settings"
+                className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Settings
+              </Link>
             </div>
           </div>
           <div className="flex items-center space-x-4">

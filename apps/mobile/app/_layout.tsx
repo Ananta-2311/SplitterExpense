@@ -44,6 +44,13 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen 
+          name="settings" 
+          options={{ 
+            title: 'Settings',
+            headerRight: () => <SyncHeader />
+          }} 
+        />
+        <Stack.Screen 
           name="screens/LoginScreen" 
           options={{ title: 'Sign In', headerShown: false }} 
         />

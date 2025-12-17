@@ -9,6 +9,7 @@ import analyticsRoutes from './routes/analytics';
 import recurringRoutes from './routes/recurring';
 import syncRoutes from './routes/sync';
 import exportRoutes from './routes/export';
+import settingsRoutes from './routes/settings';
 import { startScheduler } from './services/scheduler';
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use('/api', categorizeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
