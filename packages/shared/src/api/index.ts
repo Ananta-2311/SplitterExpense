@@ -227,6 +227,42 @@ export class ApiClient {
     return this.get(`/api/analytics/income-expense${query}`);
   }
 
+  async getBatchedAnalytics(months?: number, categoryMonths?: number): Promise<{
+    success: boolean;
+    data: {
+      monthly: Array<{
+        month: string;
+        income: number;
+        expense: number;
+        net: number;
+      }>;
+      categories: Array<{
+        categoryId: string;
+        name: string;
+        amount: number;
+        color?: string;
+        count: number;
+        percentage: number;
+      }>;
+      incomeExpense: {
+        totalIncome: number;
+        totalExpense: number;
+        net: number;
+        monthlyBreakdown: Array<{
+          month: string;
+          income: number;
+          expense: number;
+        }>;
+      };
+    };
+  }> {
+    const params = new URLSearchParams();
+    if (months) params.append('months', String(months));
+    if (categoryMonths) params.append('categoryMonths', String(categoryMonths));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.get(`/api/analytics/batch${query}`);
+  }
+
   // Recurring expenses methods
   async getRecurringExpenses(): Promise<{
     success: boolean;

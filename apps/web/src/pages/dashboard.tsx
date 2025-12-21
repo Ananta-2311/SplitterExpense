@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import { useRouter } from 'next/router';
 import {
   LineChart,
@@ -19,6 +19,7 @@ import { getAccessToken, apiClient } from '../lib/auth';
 import { formatCurrency } from '@expensetracker/shared';
 import RecurringExpensesWidget from '../components/RecurringExpensesWidget';
 import { chartsToImage } from '../lib/chartToImage';
+import { ChartSkeleton, SummaryCardSkeleton } from '../components/SkeletonLoader';
 
 interface MonthlyData {
   month: string;
@@ -82,17 +83,28 @@ export default function Dashboard() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const [monthly, categories, incomeExpense] = await Promise.all([
-        apiClient.getMonthlyAnalytics(6),
-        apiClient.getCategoryAnalytics(3),
-        apiClient.getIncomeExpenseAnalytics(6),
-      ]);
+      // Use batched endpoint for better performance
+      const batched = await apiClient.getBatchedAnalytics(6, 3);
 
-      setMonthlyData(monthly.data);
-      setCategoryData(categories.data);
-      setIncomeExpenseData(incomeExpense.data);
+      setMonthlyData(batched.data.monthly);
+      setCategoryData(batched.data.categories);
+      setIncomeExpenseData(batched.data.incomeExpense);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      // Fallback to individual endpoints if batched fails
+      try {
+        const [monthly, categories, incomeExpense] = await Promise.all([
+          apiClient.getMonthlyAnalytics(6),
+          apiClient.getCategoryAnalytics(3),
+          apiClient.getIncomeExpenseAnalytics(6),
+        ]);
+
+        setMonthlyData(monthly.data);
+        setCategoryData(categories.data);
+        setIncomeExpenseData(incomeExpense.data);
+      } catch (fallbackError) {
+        console.error('Fallback analytics fetch failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -143,17 +155,102 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) {
+  // Memoize chart components to prevent re-renders
+  const MonthlyChart = useMemo(() => {
+    if (loading || monthlyData.length === 0) return null;
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
-          </div>
-        </div>
-      </div>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={monthlyData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="month"
+            tickFormatter={formatMonth}
+            style={{ fontSize: '12px' }}
+          />
+          <YAxis tickFormatter={(value) => `$${value}`} style={{ fontSize: '12px' }} />
+          <Tooltip
+            formatter={(value: number) => formatCurrency(value)}
+            labelFormatter={(label) => formatMonth(label)}
+          />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="income"
+            stroke="#10B981"
+            strokeWidth={2}
+            name="Income"
+          />
+          <Line
+            type="monotone"
+            dataKey="expense"
+            stroke="#EF4444"
+            strokeWidth={2}
+            name="Expense"
+          />
+          <Line
+            type="monotone"
+            dataKey="net"
+            stroke="#4F46E5"
+            strokeWidth={2}
+            name="Net"
+            strokeDasharray="5 5"
+          />
+        </LineChart>
+      </ResponsiveContainer>
     );
-  }
+  }, [monthlyData, loading]);
+
+  const CategoryChart = useMemo(() => {
+    if (loading || categoryData.length === 0) return null;
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={categoryData}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="amount"
+          >
+            {categoryData.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.color || COLORS[index % COLORS.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value: number) => formatCurrency(value)} />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  }, [categoryData, loading]);
+
+  const IncomeExpenseChart = useMemo(() => {
+    if (loading || !incomeExpenseData || incomeExpenseData.monthlyBreakdown.length === 0) return null;
+    return (
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart data={incomeExpenseData.monthlyBreakdown}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="month"
+            tickFormatter={formatMonth}
+            style={{ fontSize: '12px' }}
+          />
+          <YAxis tickFormatter={(value) => `$${value}`} style={{ fontSize: '12px' }} />
+          <Tooltip
+            formatter={(value: number) => formatCurrency(value)}
+            labelFormatter={(label) => formatMonth(label)}
+          />
+          <Legend />
+          <Bar dataKey="income" fill="#10B981" name="Income" />
+          <Bar dataKey="expense" fill="#EF4444" name="Expense" />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }, [incomeExpenseData, loading]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
@@ -208,21 +305,27 @@ export default function Dashboard() {
         </div>
 
         {/* Summary Cards */}
-        {incomeExpenseData && (
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <SummaryCardSkeleton />
+            <SummaryCardSkeleton />
+            <SummaryCardSkeleton />
+          </div>
+        ) : incomeExpenseData ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 min-h-[120px]">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Income</p>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(incomeExpenseData.totalIncome)}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 min-h-[120px]">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Total Expense</p>
               <p className="text-3xl font-bold text-red-600 dark:text-red-400">
                 {formatCurrency(incomeExpenseData.totalExpense)}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 min-h-[120px]">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Net</p>
               <p
                 className={`text-3xl font-bold ${
@@ -233,7 +336,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Recurring Expenses Widget */}
         <div className="mb-6">
@@ -243,76 +346,28 @@ export default function Dashboard() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Monthly Line Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" id="monthly-chart">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 min-h-[380px]" id="monthly-chart">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Monthly Overview</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={formatMonth}
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis tickFormatter={(value) => `$${value}`} style={{ fontSize: '12px' }} />
-                <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
-                  labelFormatter={(label) => formatMonth(label)}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="income"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  name="Income"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="expense"
-                  stroke="#EF4444"
-                  strokeWidth={2}
-                  name="Expense"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="net"
-                  stroke="#4F46E5"
-                  strokeWidth={2}
-                  name="Net"
-                  strokeDasharray="5 5"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <ChartSkeleton />
+            ) : MonthlyChart ? (
+              MonthlyChart
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
+                No monthly data available
+              </div>
+            )}
           </div>
 
           {/* Category Pie Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" id="category-chart">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 min-h-[380px]" id="category-chart">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Expenses by Category</h2>
-            {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="amount"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color || COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                </PieChart>
-              </ResponsiveContainer>
+            {loading ? (
+              <ChartSkeleton />
+            ) : CategoryChart ? (
+              CategoryChart
             ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
                 No category data available
               </div>
             )}
@@ -320,31 +375,16 @@ export default function Dashboard() {
         </div>
 
         {/* Income vs Expense Bar Chart */}
-        {incomeExpenseData && incomeExpenseData.monthlyBreakdown.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" id="income-expense-chart">
+        {loading ? (
+          <ChartSkeleton />
+        ) : incomeExpenseData && incomeExpenseData.monthlyBreakdown.length > 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 min-h-[500px]" id="income-expense-chart">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Income vs Expense by Month
             </h2>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={incomeExpenseData.monthlyBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={formatMonth}
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis tickFormatter={(value) => `$${value}`} style={{ fontSize: '12px' }} />
-                <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
-                  labelFormatter={(label) => formatMonth(label)}
-                />
-                <Legend />
-                <Bar dataKey="income" fill="#10B981" name="Income" />
-                <Bar dataKey="expense" fill="#EF4444" name="Expense" />
-              </BarChart>
-            </ResponsiveContainer>
+            {IncomeExpenseChart}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

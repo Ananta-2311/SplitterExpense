@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { getAccessToken, apiClient } from '../../lib/auth';
 import { formatCurrency, formatDate } from '@expensetracker/shared';
+import { TransactionRowSkeleton } from '../../components/SkeletonLoader';
 
 interface Transaction {
   id: string;
@@ -205,10 +206,12 @@ export default function TransactionsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="bg-white rounded-lg shadow overflow-hidden min-h-[400px]">
+          {loading && pagination.page === 1 ? (
+            <div className="p-6">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TransactionRowSkeleton key={i} />
+              ))}
             </div>
           ) : transactions.length === 0 ? (
             <div className="p-8 text-center text-gray-500">

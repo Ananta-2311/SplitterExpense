@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -120,7 +120,8 @@ export default function TransactionsScreen() {
     new Map(transactions.map((t) => [t.category.id, t.category])).values()
   );
 
-  const renderTransaction = ({ item }: { item: Transaction }) => (
+  // Memoize render function to prevent re-renders
+  const renderTransaction = useCallback(({ item }: { item: Transaction }) => (
     <View style={styles.transactionCard}>
       <View style={styles.transactionHeader}>
         <View style={styles.transactionInfo}>
@@ -170,6 +171,20 @@ export default function TransactionsScreen() {
         </View>
       </View>
     </View>
+  ), []);
+
+  // Memoize key extractor
+  const keyExtractor = useCallback((item: Transaction) => item.id, []);
+
+  // Calculate item layout for better performance
+  const ITEM_HEIGHT = 120; // Approximate height of transaction card
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    }),
+    []
   );
 
   return (
@@ -224,11 +239,17 @@ export default function TransactionsScreen() {
         <FlatList
           data={transactions}
           renderItem={renderTransaction}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
           onRefresh={handleRefresh}
           refreshing={refreshing}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={10}
+          initialNumToRender={10}
           ListFooterComponent={
             loading && pagination.page > 1 ? (
               <View style={styles.footerLoader}>
@@ -335,7 +356,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
@@ -346,7 +369,9 @@ const styles = StyleSheet.create({
   },
   filtersContainer: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
@@ -355,7 +380,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: '#111827',
     backgroundColor: '#FFFFFF',
@@ -381,12 +406,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   transactionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: {
@@ -405,7 +433,7 @@ const styles = StyleSheet.create({
   },
   transactionInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 16,
   },
   transactionDescription: {
     fontSize: 16,
@@ -429,12 +457,12 @@ const styles = StyleSheet.create({
   },
   transactionFooter: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
     alignItems: 'center',
   },
   categoryBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 12,
     backgroundColor: '#E5E7EB',
   },
@@ -445,7 +473,7 @@ const styles = StyleSheet.create({
   },
   typeBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   incomeBadge: {

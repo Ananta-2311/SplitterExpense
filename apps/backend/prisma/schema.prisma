@@ -60,6 +60,9 @@ model Transaction {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([date])
+  @@index([userId, date])
   @@map("transactions")
 }
 
