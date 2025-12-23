@@ -15,7 +15,7 @@ expensetracker/
 └── package.json      # Root workspace configuration
 ```
 
-## Getting Started
+Getting Started
 
 ### Prerequisites
 
